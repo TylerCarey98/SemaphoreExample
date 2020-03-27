@@ -14,7 +14,7 @@ void *process3 (void* dummy);
 
 void waitFreeOne();
 
-int n = 3;
+int n = 2;
 sem_t freefull, onefull, twofull, p1, p2;
 list<int> freelist(n, 0), list1(0), list2(0);
 mutex mtx, freelock, lock1, lock2;
@@ -37,11 +37,7 @@ int main () {
 void *process1 (void* dummy) {
 	int b;
 	while (1) {
-		printf("P1 starting\n");
-		fflush(stdout);
-
 		sem_wait(&p1);
-
 		mtx.lock();
 		if (freelist.size() < 1) {
 			mtx.unlock();
@@ -62,18 +58,12 @@ void *process1 (void* dummy) {
 		lock1.unlock();
 		sem_post(&onefull);
 		sem_post(&p2);
-
-
-		printf("P1 ending\n");
-		fflush(stdout);
 	}
 }
 
 void *process2 (void* dummy) {
 	int x, y;
 	while (1) {
-		printf("P2 starting\n");
-		fflush(stdout);
 		sem_wait(&p2);
 
 		waitFreeOne();
@@ -96,31 +86,26 @@ void *process2 (void* dummy) {
 		list2.push_back(y);
 		lock2.unlock();
 		sem_post(&twofull);
-		printf("P2 ending\n");
-		fflush(stdout);
 	}
 }
 
 void *process3 (void* dummy) {
 	int c;
 	while (1) {
-		printf("P3 starting\n");
-		fflush(stdout);
-
 		sem_wait(&twofull);
 		lock2.lock();
 		c = list2.front();
 		list2.pop_front();
 		lock2.unlock();
 
+		printf("%d\n", c);
+		fflush(stdout);
+
 		freelock.lock();//pthread_mutex_lock(&lockfree);
 		freelist.push_back(c);
 		freelock.unlock();//pthread_mutex_unlock(&lockfree);
 		sem_post(&freefull);
 		sem_post(&p1);
-
-		printf("P3 ending\n");
-		fflush(stdout);
 	}
 }
 
@@ -128,16 +113,12 @@ void waitFreeOne() {
 	mtx.lock();
 	while (1) {
 		if (freelist.size() < 1) {
-			mtx.unlock();
 			sem_wait(&freefull);
-			mtx.lock();
 			continue;
 		}
 
 		if (list1.size() < 1) {
-			mtx.unlock();
 			sem_wait(&onefull);
-			mtx.lock();
 			continue;
 		}
 
